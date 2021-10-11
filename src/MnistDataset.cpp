@@ -112,3 +112,20 @@ void MnistDataset::getTrainMinibatch(size_t batchSize, size_t idx,
     }
   }
 }
+
+void MnistDataset::getTestMinibatch(size_t batchSize, size_t idx, vector<MnistImage>& images, vector<float>& oneHotLabels) 
+{
+  images.clear();
+  oneHotLabels.clear();
+
+  for (int i = idx * batchSize; i < (idx + 1) * batchSize; i++) {
+    if (i >= testImages.size())
+      break;
+
+    images.push_back(testImages[i]);
+    unsigned char label = testLabels[i];
+    for (int j = 0; j < 10; j++) {
+      oneHotLabels.push_back((unsigned char)j == label ? 1.0f : 0.0f);
+    }
+  }
+}

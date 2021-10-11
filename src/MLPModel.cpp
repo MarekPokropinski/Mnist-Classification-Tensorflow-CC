@@ -154,3 +154,24 @@ Status MLP::trainStep(Tensor &x, Tensor &y, float &loss, int &correct) {
 
   return Status::OK();
 }
+Status MLP::validationStep(Tensor &x, Tensor &y, float &loss, int &correct) {
+  if (!scope.ok())
+    return scope.status();
+  vector<Tensor> out_tensors;
+
+  ClientSession::FeedType inputs(
+      {{input_placeholder, x}, {label_placeholder, y}});
+
+  TF_CHECK_OK(session->Run(inputs, {loss_tensor, output, prediction_tensor}, &out_tensors));
+  loss = out_tensors[0].scalar<float>()(0);
+
+  auto pred_mat = out_tensors[2].vec<int64_t>();
+  auto y_mat = y.matrix<float>();
+  for (int i = 0; i < pred_mat.dimension(0); i++) {
+    if (y_mat(i, pred_mat(i)) == 1.0f) {
+      correct += 1;
+    }
+  }
+
+  return Status::OK();
+}

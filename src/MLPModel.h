@@ -63,6 +63,6 @@ public:
   MLP(Scope &scope, float learning_rate);
   Status initialize();
   Status trainStep(Tensor& x, Tensor& y, float& loss, int& correct);
-
+  Status validationStep(Tensor& x, Tensor& y, float& loss, int& correct);
 };
 #endif

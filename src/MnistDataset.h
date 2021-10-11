@@ -22,7 +22,11 @@ public:
     MnistDataset(string datasetPath);
     void shuffle();
     void getTrainMinibatch(size_t batchSize, size_t i, vector<MnistImage>&, vector<float>&);
+    void getTestMinibatch(size_t batchSize, size_t i, vector<MnistImage>&, vector<float>&);
     size_t trainSize() {
         return trainImages.size();
+    }
+    size_t testSize() {
+        return testImages.size();
     }
 };

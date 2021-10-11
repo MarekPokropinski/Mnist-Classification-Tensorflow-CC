@@ -28,11 +28,16 @@ int main() {
   vector<MnistImage> imagesBatch;
   vector<float> oneHotLabelsBatch;
   float loss;
+  float valLoss;
 
   for (int epoch = 0; epoch < 300; epoch++) {
     dataset.shuffle();
     int correct_preds = 0;
+    int correct_val_preds = 0;
     vector<float> losses;
+    vector<float> valLosses;
+
+    // Run training
     for (int i = 0;; i++) {
       int64_t dims[] = {batch_size, 28 * 28};
       int64_t labelDims[] = {batch_size, 10};
@@ -61,14 +66,51 @@ int main() {
 
       mlp.trainStep(imagesTensor, labelsTensor, loss, correct_preds);
       losses.push_back(loss);
-      // printf("%f\n", loss);
+    }
+
+    // Run validation
+    for (int i = 0;; i++) {
+      int64_t dims[] = {batch_size, 28 * 28};
+      int64_t labelDims[] = {batch_size, 10};
+      dataset.getTestMinibatch(batch_size, i, imagesBatch, oneHotLabelsBatch);
+      if (imagesBatch.size() == 0)
+        break;
+      Tensor imagesTensor(DT_UINT8, TensorShape({(int)imagesBatch.size(), 28 * 28}));
+      Tensor labelsTensor(DT_FLOAT, TensorShape({(int)imagesBatch.size(), 10}));
+      if (imagesBatch.size() * sizeof(MnistImage) !=
+          imagesTensor.dim_size(0) * imagesTensor.dim_size(1)) {
+        printf("Data size: %d, tensor size: %d\n",
+               imagesBatch.size() * sizeof(MnistImage),
+               imagesTensor.dim_size(0) * imagesTensor.dim_size(1));
+      }
+      if (oneHotLabelsBatch.size() !=
+          labelsTensor.dim_size(0) * labelsTensor.dim_size(1)) {
+        printf("Labels size: %d, tensor size: %d\n", oneHotLabelsBatch.size(),
+               labelsTensor.dim_size(0) * labelsTensor.dim_size(1));
+      }
+
+
+      memcpy(imagesTensor.data(), imagesBatch.data(),
+             imagesBatch.size() * sizeof(MnistImage));
+      memcpy(labelsTensor.data(), oneHotLabelsBatch.data(),
+             oneHotLabelsBatch.size() * sizeof(float));
+
+      mlp.validationStep(imagesTensor, labelsTensor, valLoss, correct_val_preds);
+      valLosses.push_back(valLoss);
     }
     float mean_loss = 0;
     for (int i = 0; i < losses.size(); i++) {
       mean_loss += losses[i];
     }
     mean_loss /= losses.size();
-    printf("Epoch: %d, loss: %f, accuracy: %f\n", epoch, mean_loss, (float)correct_preds/dataset.trainSize());
+
+    float mean_val_loss = 0;
+    for (int i = 0; i < valLosses.size(); i++) {
+      mean_val_loss += valLosses[i];
+    }
+    mean_val_loss /= valLosses.size();
+
+    printf("Epoch: %d, loss: %f, accuracy: %f, val_loss: %f, val_accuracy: %f\n", epoch, mean_loss, (float)correct_preds/dataset.trainSize(), mean_val_loss, (float)correct_val_preds/dataset.testSize());
   }
 
   return 0;
